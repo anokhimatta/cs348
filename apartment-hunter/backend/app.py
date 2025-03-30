@@ -20,8 +20,8 @@ def close_connection(exception):
         db.close()
 
 def query_db(query, args=(), one=False, commit=False):
-    connection = get_db()
-    cursor = connection.cursor()
+    conn = get_db()
+    cursor = conn.cursor()
     try:
         cursor.execute(query, args)
         if commit:
@@ -38,6 +38,7 @@ def query_db(query, args=(), one=False, commit=False):
 def dict_from_row(row):
     return {k: row[k] for k in row.keys()} if row else None 
 
+# PROPERTY CRUD
 @app.route('/api/properties', methods=['GET'])
 def get_properties():
     try:
@@ -140,7 +141,7 @@ def delete_property(id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Renter CRUD operations
+# RENTER CRUD
 @app.route('/api/renters', methods=['GET'])
 def get_renters():
     try:
@@ -243,7 +244,7 @@ def delete_renter(id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Leasing Office CRUD operations
+# LEASING OFFICE CRUD
 @app.route('/api/leasing-offices', methods=['GET'])
 def get_leasing_offices():
     try:
@@ -346,7 +347,7 @@ def delete_leasing_office(id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Lease Application CRUD operations
+# LEASE APPLICATIONS CRUD
 @app.route('/api/lease-applications', methods=['GET'])
 def get_lease_applications():
     try:
@@ -449,7 +450,7 @@ def delete_lease_application(id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Reviews CRUD operations
+# REVIEWS CRUD
 @app.route('/api/reviews', methods=['GET'])
 def get_reviews():
     try:
@@ -505,7 +506,7 @@ def update_review(id):
         data = request.get_json()
         set_clause = ', '.join([f"{key} = ?" for key in data.keys()])
         values = list(data.values())
-        values.append(id)  # For the WHERE clause
+        values.append(id)
         
         sql = f"""
         UPDATE Reviews 
@@ -549,117 +550,6 @@ def delete_review(id):
         cursor.close()
         
         return jsonify({"message": "Review deleted"})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# Advanced query endpoints with direct SQL
-@app.route('/api/properties-with-reviews', methods=['GET'])
-def properties_with_reviews():
-    try:
-        sql = """
-        SELECT p.*, r.id as review_id, r.rating, r.comment, r.date 
-        FROM Property p
-        LEFT JOIN Reviews r ON p.id = r.property_id
-        ORDER BY p.id
-        """
-        
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute(sql)
-        rows = cursor.fetchall()
-        cursor.close()
-        
-        # Process the results to group by property
-        properties = {}
-        for row in rows:
-            row_dict = dict_from_row(row)
-            property_id = row_dict['id']
-            
-            # Initialize property if not already in results
-            if property_id not in properties:
-                properties[property_id] = {
-                    key: row_dict[key] for key in row_dict 
-                    if key not in ('review_id', 'rating', 'comment', 'date')
-                }
-                properties[property_id]['reviews'] = []
-            
-            # Add review if it exists
-            if row_dict['review_id']:
-                properties[property_id]['reviews'].append({
-                    'id': row_dict['review_id'],
-                    'rating': row_dict['rating'],
-                    'comment': row_dict['comment'],
-                    'date': row_dict['date']
-                })
-        
-        return jsonify(list(properties.values()))
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/renters/<int:id>/applications', methods=['GET'])
-def renter_applications(id):
-    try:
-        # First check if renter exists
-        check_sql = """
-        SELECT id FROM Renter WHERE id = ?
-        """
-        renter = query_db(check_sql, (id,), one=True)
-        if not renter:
-            return jsonify({"error": "Renter not found"}), 404
-        
-        # Get all applications for this renter
-        sql = """
-        SELECT * FROM "Lease Application" WHERE renter_id = ?
-        """
-        
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute(sql, (id,))
-        rows = cursor.fetchall()
-        cursor.close()
-        
-        applications = [dict_from_row(row) for row in rows]
-        return jsonify(applications)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/properties/search', methods=['GET'])
-def search_properties():
-    try:
-        # Get search parameters from query string
-        min_price = request.args.get('min_price', None)
-        max_price = request.args.get('max_price', None)
-        min_bedrooms = request.args.get('min_bedrooms', None)
-        location = request.args.get('location', None)
-        
-        # Build the query dynamically
-        sql = "SELECT * FROM Property WHERE 1=1"
-        params = []
-        
-        if min_price:
-            sql += " AND price >= ?"
-            params.append(min_price)
-        
-        if max_price:
-            sql += " AND price <= ?"
-            params.append(max_price)
-        
-        if min_bedrooms:
-            sql += " AND bedrooms >= ?"
-            params.append(min_bedrooms)
-        
-        if location:
-            sql += " AND address LIKE ?"
-            params.append(f"%{location}%")
-        
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute(sql, params)
-        rows = cursor.fetchall()
-        cursor.close()
-        
-        properties = [dict_from_row(row) for row in rows]
-        return jsonify(properties)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
