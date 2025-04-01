@@ -166,22 +166,6 @@
   gap: 10px;
 }
 
-.btn-container {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    /*display: inline-block;*/
-    padding: 8px 8px;
-    border-radius: 4px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    text-align: center;
-    text-decoration: none;
-    border: 1px solid transparent;
-    transition: all 0.2s ease;
-}
-
 /* Buttons */
 .btn {
   display: inline-block;

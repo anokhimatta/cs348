@@ -31,7 +31,7 @@ function App() {
         </main>
         
         <footer className="app-footer">
-          <p>© 2025 Apartment Hunter</p>
+          <p>Apartment Hunter</p>
         </footer>
       </div>
     </Router>

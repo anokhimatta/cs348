@@ -83,23 +83,20 @@ const RenterList = () => {
                   <td>${renter.min_budget} - ${renter.max_budget}</td>
                   <td>{renter.credit_score}</td>
                   <td className="actions">
-                    <button className="btn-container"
+                  <button className="btn"
                       onClick={() => navigate(`/renters/${renter.renter_id}`)} 
-                      /*className="button-view"*/
-                    >
+                      >
                       View
                     </button>
 
-                    <button className="btn-container"
+                    <button className="btn"
                       onClick={() => navigate(`/renters/${renter.renter_id}/edit`)} 
-                      /*className="button-view"*/
                     >
                       Edit
                     </button>
 
-                    <button className="btn-container" 
+                    <button className="btn" 
                       onClick={() => handleDeleteClick(renter.renter_id)} 
-                      /*className="button-delete"*/
                     >
                       Delete
                     </button>
@@ -141,9 +138,23 @@ export default RenterList;
 
 
 
-/*<Link to={`/renters/${renter.renter_id}`} className="button-view">
+/*<button className="btn-container"
+                      onClick={() => navigate(`/renters/${renter.renter_id}`)} 
+                      className="button-view"
+                      >
                       View
-                    </Link>
-                    <Link to={`/renters/${renter.renter_id}/edit`} className="button-edit">
+                    </button>
+
+                    <button className="btn-container"
+                      onClick={() => navigate(`/renters/${renter.renter_id}/edit`)} 
+                      className="button-view"
+                    >
                       Edit
-                    </Link>*/
+                    </button>
+
+                    <button className="btn-container" 
+                      onClick={() => handleDeleteClick(renter.renter_id)} 
+                      /*className="button-delete"
+                    >
+                      Delete
+                    </button>*/
