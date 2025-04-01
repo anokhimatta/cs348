@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify
 import sqlite3
-#import os
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -8,33 +7,28 @@ CORS(app)
 
 DATABASE_PATH = 'apartments3.db'
 
-# Helper function to connect to database
 def get_db_connection():
     conn = sqlite3.connect(DATABASE_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
-# Python implementations of SQL functions
 def calculate_property_avg_rating(property_id):
     conn = get_db_connection()
     result = conn.execute('SELECT AVG(rating) FROM Reviews WHERE rev_property_id = ?', (property_id,)).fetchone()[0]
     conn.close()
-    return result or 0  # Return 0 if NULL
+    return result or 0
 
 def check_within_budget(property_price, min_budget, max_budget):
     return 1 if min_budget <= property_price <= max_budget else 0
 
-# Initialize database with custom functions
 def init_db():
     conn = get_db_connection()
     
-    # Register Python functions with SQLite
     conn.create_function("get_property_avg_rating", 1, calculate_property_avg_rating)
     conn.create_function("is_within_budget", 3, check_within_budget)
     
     conn.close()
 
-# Call init_db at startup
 init_db()
 
 # CRUD Operations for Renter
@@ -105,7 +99,6 @@ def update_renter(renter_id):
         conn.close()
         return jsonify({"error": "Renter not found"}), 404
     
-    # Build update SQL dynamically based on provided fields
     update_fields = []
     values = []
     
@@ -150,7 +143,6 @@ def delete_renter(renter_id):
     conn.close()
     return jsonify({"success": True, "message": "Renter deleted successfully"})
 
-# CRUD Operations for Property
 @app.route('/properties', methods=['GET'])
 def get_properties():
     conn = get_db_connection()
@@ -168,7 +160,6 @@ def get_property(property_id):
         conn.close()
         return jsonify({"error": "Property not found"}), 404
     
-    # Get average rating using our registered function
     avg_rating = conn.execute('SELECT get_property_avg_rating(?)', (property_id,)).fetchone()[0]
     
     property_dict = dict(property)
@@ -238,7 +229,6 @@ def update_property(property_id):
         conn.close()
         return jsonify({"error": "Property not found"}), 404
     
-    # Build update SQL dynamically
     update_fields = []
     values = []
     
@@ -307,7 +297,6 @@ def get_office(office_id):
         conn.close()
         return jsonify({"error": "Leasing office not found"}), 404
     
-    # Get properties managed by this office
     properties = conn.execute('SELECT * FROM Property WHERE office_id = ?', (office_id,)).fetchall()
     
     office_dict = dict(office)
@@ -364,7 +353,6 @@ def update_office(office_id):
         conn.close()
         return jsonify({"error": "Leasing office not found"}), 404
     
-    # Build update SQL dynamically
     update_fields = []
     values = []
     
@@ -455,19 +443,16 @@ def create_application():
     
     conn = get_db_connection()
     
-    # Check if renter exists
     renter = conn.execute('SELECT * FROM Renter WHERE renter_id = ?', (data['app_renter_id'],)).fetchone()
     if renter is None:
         conn.close()
         return jsonify({"error": "Renter not found"}), 404
     
-    # Check if property exists
     property = conn.execute('SELECT * FROM Property WHERE property_id = ?', (data['app_property_id'],)).fetchone()
     if property is None:
         conn.close()
         return jsonify({"error": "Property not found"}), 404
     
-    # Check if property is within renter's budget using our custom function
     within_budget = conn.execute(
         'SELECT is_within_budget(?, ?, ?)', 
         (property['price_per_person'], renter['min_budget'], renter['max_budget'])
@@ -509,7 +494,6 @@ def update_application(application_id):
         conn.close()
         return jsonify({"error": "Application not found"}), 404
     
-    # Replace stored procedure with direct SQL update
     if 'status' in data and len(data) == 1:
         try:
             conn.execute('UPDATE LeaseApplications SET status = ? WHERE application_id = ?', 
@@ -519,7 +503,6 @@ def update_application(application_id):
             conn.close()
             return jsonify({"error": str(e)}), 400
     else:
-        # Otherwise build update SQL dynamically
         update_fields = []
         values = []
         
@@ -628,13 +611,11 @@ def create_review():
         if field not in data:
             return jsonify({"error": f"Missing required field: {field}"}), 400
     
-    # Ensure at least one of property_id or office_id is provided
     if not data.get('rev_property_id') and not data.get('rev_office_id'):
         return jsonify({"error": "Either rev_property_id or rev_office_id must be provided"}), 400
     
     conn = get_db_connection()
     
-    # Replace stored procedure with direct SQL insert
     try:
         conn.execute('''
             INSERT INTO Reviews (rev_renter_id, rev_property_id, rev_office_id, rating, comment)
@@ -669,7 +650,6 @@ def update_review(review_id):
         conn.close()
         return jsonify({"error": "Review not found"}), 404
     
-    # Build update SQL dynamically
     update_fields = []
     values = []
     
@@ -714,7 +694,7 @@ def delete_review(review_id):
     conn.close()
     return jsonify({"success": True, "message": "Review deleted successfully"})
 
-# Additional endpoint using direct SQL instead of stored procedure
+# endpoint
 @app.route('/properties/budget/<min_price>/<max_price>', methods=['GET'])
 def get_properties_by_budget(min_price, max_price):
     conn = get_db_connection()
@@ -729,6 +709,6 @@ def get_properties_by_budget(min_price, max_price):
     conn.close()
     return jsonify([dict(property) for property in properties])
 
-# Run the application
+# Run
 if __name__ == '__main__':
     app.run(debug=True)
