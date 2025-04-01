@@ -31,7 +31,7 @@ def init_db():
 
 init_db()
 
-# CRUD Operations for Renter
+# Renter CRUD
 @app.route('/renters', methods=['GET'])
 def get_renters():
     conn = get_db_connection()
@@ -52,6 +52,8 @@ def get_renter(renter_id):
     return jsonify(dict(renter))
 
 @app.route('/renters', methods=['POST'])
+
+# Create renter
 def create_renter():
     if not request.json:
         return jsonify({"error": "Request must be JSON"}), 400
@@ -85,6 +87,7 @@ def create_renter():
     conn.close()
     return jsonify({"success": True, "message": "Renter created successfully"}), 201
 
+# Update renter
 @app.route('/renters/<renter_id>', methods=['PUT'])
 def update_renter(renter_id):
     if not request.json:
@@ -124,6 +127,7 @@ def update_renter(renter_id):
     conn.close()
     return jsonify({"success": True, "message": "Renter updated successfully"})
 
+# Delete renter
 @app.route('/renters/<renter_id>', methods=['DELETE'])
 def delete_renter(renter_id):
     conn = get_db_connection()
@@ -143,6 +147,8 @@ def delete_renter(renter_id):
     conn.close()
     return jsonify({"success": True, "message": "Renter deleted successfully"})
 
+
+# Property CRUD
 @app.route('/properties', methods=['GET'])
 def get_properties():
     conn = get_db_connection()
@@ -279,7 +285,7 @@ def delete_property(property_id):
     conn.close()
     return jsonify({"success": True, "message": "Property deleted successfully"})
 
-# CRUD Operations for LeasingOffice
+# LeasingOffice CRUD
 @app.route('/offices', methods=['GET'])
 def get_offices():
     conn = get_db_connection()
@@ -397,7 +403,7 @@ def delete_office(office_id):
     conn.close()
     return jsonify({"success": True, "message": "Leasing office deleted successfully"})
 
-# CRUD Operations for LeaseApplications
+# LeaseApplications CRUD
 @app.route('/applications', methods=['GET'])
 def get_applications():
     conn = get_db_connection()
@@ -547,7 +553,7 @@ def delete_application(application_id):
     conn.close()
     return jsonify({"success": True, "message": "Application deleted successfully"})
 
-# CRUD Operations for Reviews
+# Reviews CRUD
 @app.route('/reviews', methods=['GET'])
 def get_reviews():
     conn = get_db_connection()
