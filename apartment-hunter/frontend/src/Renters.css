@@ -178,6 +178,7 @@
   text-decoration: none;
   border: 1px solid transparent;
   transition: all 0.2s ease;
+  margin-right: 5px;
 }
 
 .btn-primary {
