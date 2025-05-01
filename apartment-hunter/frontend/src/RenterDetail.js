@@ -71,7 +71,7 @@ const RenterDetail = () => {
           <Link to={`/renters/${id}/edit`} className="button-edit">
             Edit
           </Link>
-          <button onClick={handleDeleteClick} className="button-edit">
+          <button onClick={handleDeleteClick} className="btn btn-secondary">
             Delete
           </button>
         </div>
