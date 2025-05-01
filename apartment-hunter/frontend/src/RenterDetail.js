@@ -65,15 +65,15 @@ const RenterDetail = () => {
       <div className="page-header">
         <h1>Renter Details</h1>
         <div className="header-actions">
-        <button className="btn btn-secondary" onClick={handleEdit}>
-          Edit
-        </button>
-        <button className="btn btn-secondary" onClick={handleBack}>
-          Back to List
-        </button>
-        <button className="btn btn-secondary" onClick={handleDelete}>
-          Delete
-        </button>
+          <Link to="/renters" className="button-back">
+            Back to List
+          </Link>
+          <Link to={`/renters/${id}/edit`} className="button-edit">
+            Edit
+          </Link>
+          <button onClick={handleDeleteClick} className="btn btn-secondary">
+            Delete
+          </button>
         </div>
       </div>
 
