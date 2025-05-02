@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from sqlalchemy import func, create_engine, text
-from sqlalchemy.ext.hybrid import hybrid_property
 import os
 
 app = Flask(__name__)
@@ -54,13 +53,6 @@ class Property(db.Model):
     
     # Relationships
     applications = db.relationship('LeaseApplication', backref='property', lazy=True)
-    reviews = db.relationship('Review', backref='property', lazy=True)
-    
-    @hybrid_property
-    def avg_rating(self):
-        from sqlalchemy import func
-        result = db.session.query(func.avg(Review.rating)).filter(Review.rev_property_id == self.property_id).scalar()
-        return result or 0
     
     def to_dict(self):
         return {
@@ -70,7 +62,6 @@ class Property(db.Model):
             'num_bedrooms': self.num_bedrooms,
             'num_bathrooms': self.num_bathrooms,
             'price_per_person': self.price_per_person,
-            'avg_rating': self.avg_rating
         }
 
 
@@ -90,23 +81,6 @@ class LeaseApplication(db.Model):
             'status': self.status,
             'renter_name': self.renter.name if self.renter else None,
             'property_name': self.property.property_name if self.property else None
-        }
-
-
-class Review(db.Model):
-    __tablename__ = 'Reviews'
-    
-    review_id = db.Column(db.Integer, primary_key=True)
-    rev_property_id = db.Column(db.Integer, db.ForeignKey('Property.property_id'), nullable=False)
-    rating = db.Column(db.Integer, nullable=False)
-    comment = db.Column(db.Text)
-    
-    def to_dict(self):
-        return {
-            'review_id': self.review_id,
-            'rev_property_id': self.rev_property_id,
-            'rating': self.rating,
-            'comment': self.comment
         }
 
 
