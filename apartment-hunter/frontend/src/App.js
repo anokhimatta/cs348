@@ -49,7 +49,7 @@ function App() {
         </main>
         
         <footer className="app-footer">
-          <p>Apartment Hunter</p>
+          <p>CS 348 Final Project: Apartment Hunter</p>
         </footer>
       </div>
     </Router>
