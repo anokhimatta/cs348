@@ -200,7 +200,7 @@ const LeaseApplicationDetail = () => {
             <div className="modal-header">
               <h3>Confirm Delete</h3>
               <button 
-                className="close-button" 
+                className="btn btn-secondary" 
                 onClick={() => setShowDeleteModal(false)}
               >
                 &times;
@@ -215,7 +215,7 @@ const LeaseApplicationDetail = () => {
                 Cancel
               </button>
               <button 
-                className="btn btn-danger" 
+                className="btn btn-secondary" 
                 onClick={handleDelete}
               >
                 Delete

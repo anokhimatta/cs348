@@ -13,8 +13,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "apar
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+# Get a direct connection to the database for prepared statements
+engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
 
-# Define Models
+# Define Models (ORM Layer)
 class Renter(db.Model):
     __tablename__ = 'Renter'
     
@@ -26,7 +28,7 @@ class Renter(db.Model):
     max_budget = db.Column(db.Float, nullable=False)
     credit_score = db.Column(db.Integer, nullable=False)
     
-    # Relationships
+    # Relationships (ORM Feature)
     applications = db.relationship('LeaseApplication', backref='renter', lazy=True)
     
     def to_dict(self):
@@ -51,7 +53,7 @@ class Property(db.Model):
     num_bathrooms = db.Column(db.Float, nullable=False)
     price_per_person = db.Column(db.Float, nullable=False)
     
-    # Relationships
+    # Relationships (ORM Feature)
     applications = db.relationship('LeaseApplication', backref='property', lazy=True)
     
     def to_dict(self):
@@ -92,18 +94,49 @@ def is_within_budget(property_price, min_budget, max_budget):
 # Renter CRUD
 @app.route('/renters', methods=['GET'])
 def get_renters():
-    renters = Renter.query.all()
-    return jsonify([renter.to_dict() for renter in renters])
+    # Using Prepared Statement instead of ORM for demonstration
+    with engine.connect() as connection:
+        # Prepared statement using SQLAlchemy text() to parameterize query
+        query = text("SELECT * FROM Renter")
+        result = connection.execute(query)
+        renters = []
+        for row in result:
+            # Convert row to dictionary
+            renter = {
+                'renter_id': row[0],
+                'name': row[1],
+                'email': row[2],
+                'phone_number': row[3],
+                'min_budget': row[4],
+                'max_budget': row[5],
+                'credit_score': row[6]
+            }
+            renters.append(renter)
+        return jsonify(renters)
 
 
 @app.route('/renters/<int:renter_id>', methods=['GET'])
 def get_renter(renter_id):
-    renter = Renter.query.get(renter_id)
-    
-    if renter is None:
-        return jsonify({"error": "Renter not found"}), 404
-    
-    return jsonify(renter.to_dict())
+    # Using Prepared Statement with parameter binding
+    with engine.connect() as connection:
+        query = text("SELECT * FROM Renter WHERE renter_id = :renter_id")
+        result = connection.execute(query, {"renter_id": renter_id}).fetchone()
+        
+        if result is None:
+            return jsonify({"error": "Renter not found"}), 404
+        
+        # Convert row to dictionary
+        renter = {
+            'renter_id': result[0],
+            'name': result[1],
+            'email': result[2],
+            'phone_number': result[3],
+            'min_budget': result[4],
+            'max_budget': result[5],
+            'credit_score': result[6]
+        }
+        
+        return jsonify(renter)
 
 
 @app.route('/renters', methods=['POST'])
@@ -119,21 +152,27 @@ def create_renter():
             return jsonify({"error": f"Missing required field: {field}"}), 400
     
     try:
-        new_renter = Renter(
-            renter_id=data['renter_id'],
-            name=data['name'],
-            email=data['email'],
-            phone_number=data['phone_number'],
-            min_budget=data['min_budget'],
-            max_budget=data['max_budget'],
-            credit_score=data['credit_score']
-        )
-        
-        db.session.add(new_renter)
-        db.session.commit()
+        # Using Prepared Statement with parameter binding
+        with engine.connect() as connection:
+            # Begin a transaction
+            with connection.begin():
+                query = text("""
+                    INSERT INTO Renter (renter_id, name, email, phone_number, min_budget, max_budget, credit_score) 
+                    VALUES (:renter_id, :name, :email, :phone_number, :min_budget, :max_budget, :credit_score)
+                """)
+                
+                # Execute with named parameters
+                connection.execute(query, {
+                    "renter_id": data['renter_id'],
+                    "name": data['name'],
+                    "email": data['email'],
+                    "phone_number": data['phone_number'],
+                    "min_budget": data['min_budget'],
+                    "max_budget": data['max_budget'],
+                    "credit_score": data['credit_score']
+                })
         
     except Exception as e:
-        db.session.rollback()
         return jsonify({"error": str(e)}), 400
     
     return jsonify({"success": True, "message": "Renter created successfully"}), 201
@@ -145,26 +184,45 @@ def update_renter(renter_id):
         return jsonify({"error": "Request must be JSON"}), 400
     
     data = request.json
+    
+    # Using ORM to first check if renter exists
     renter = Renter.query.get(renter_id)
     
     if renter is None:
         return jsonify({"error": "Renter not found"}), 404
     
     update_fields = ['name', 'email', 'phone_number', 'min_budget', 'max_budget', 'credit_score']
+    update_data = {}
     update_made = False
     
     for field in update_fields:
         if field in data:
-            setattr(renter, field, data[field])
+            update_data[field] = data[field]
             update_made = True
     
     if not update_made:
         return jsonify({"error": "No fields to update"}), 400
     
     try:
-        db.session.commit()
+        # Using Prepared Statement with parameter binding
+        with engine.connect() as connection:
+            # Begin a transaction
+            with connection.begin():
+                # Dynamically build the update query based on provided fields
+                set_clauses = []
+                params = {"renter_id": renter_id}
+                
+                for field, value in update_data.items():
+                    set_clauses.append(f"{field} = :{field}")
+                    params[field] = value
+                
+                query_str = f"UPDATE Renter SET {', '.join(set_clauses)} WHERE renter_id = :renter_id"
+                query = text(query_str)
+                
+                # Execute with named parameters
+                connection.execute(query, params)
+                
     except Exception as e:
-        db.session.rollback()
         return jsonify({"error": str(e)}), 400
     
     return jsonify({"success": True, "message": "Renter updated successfully"})
@@ -172,17 +230,32 @@ def update_renter(renter_id):
 
 @app.route('/renters/<int:renter_id>', methods=['DELETE'])
 def delete_renter(renter_id):
+    # Check if renter exists using ORM
     renter = Renter.query.get(renter_id)
     
     if renter is None:
         return jsonify({"error": "Renter not found"}), 404
     
     try:
-        db.session.delete(renter)
-        db.session.commit()
+        # Using Prepared Statement with parameter binding
+        with engine.connect() as connection:
+            # Begin a transaction
+            with connection.begin():
+                # First check if renter has any applications (prevents FK constraint violation)
+                check_query = text("""
+                    SELECT COUNT(*) FROM LeaseApplications WHERE app_renter_id = :renter_id
+                """)
+                app_count = connection.execute(check_query, {"renter_id": renter_id}).scalar()
+                
+                if app_count > 0:
+                    return jsonify({"error": "Cannot delete renter with related records"}), 400
+                
+                # Then delete the renter
+                delete_query = text("DELETE FROM Renter WHERE renter_id = :renter_id")
+                connection.execute(delete_query, {"renter_id": renter_id})
+                
     except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": "Cannot delete renter with related records"}), 400
+        return jsonify({"error": str(e)}), 400
     
     return jsonify({"success": True, "message": "Renter deleted successfully"})
 
@@ -190,18 +263,32 @@ def delete_renter(renter_id):
 # Property CRUD
 @app.route('/properties', methods=['GET'])
 def get_properties():
+    # Using ORM for simplicity
     properties = Property.query.all()
     return jsonify([prop.to_dict() for prop in properties])
 
 
 @app.route('/properties/<int:property_id>', methods=['GET'])
 def get_property(property_id):
-    property = Property.query.get(property_id)
-    
-    if property is None:
-        return jsonify({"error": "Property not found"}), 404
-    
-    return jsonify(property.to_dict())
+    # Using Prepared Statement with parameter binding
+    with engine.connect() as connection:
+        query = text("SELECT * FROM Property WHERE property_id = :property_id")
+        result = connection.execute(query, {"property_id": property_id}).fetchone()
+        
+        if result is None:
+            return jsonify({"error": "Property not found"}), 404
+        
+        # Convert row to dictionary
+        property = {
+            'property_id': result[0],
+            'property_name': result[1],
+            'address': result[2],
+            'num_bedrooms': result[3],
+            'num_bathrooms': result[4],
+            'price_per_person': result[5]
+        }
+        
+        return jsonify(property)
 
 
 @app.route('/properties', methods=['POST'])
@@ -219,6 +306,7 @@ def create_property():
             return jsonify({"error": f"Missing required field: {field}"}), 400
     
     try:
+        # Using ORM for this operation
         new_property = Property(
             property_name=data['property_name'],
             address=data['address'],
@@ -247,28 +335,49 @@ def update_property(property_id):
         return jsonify({"error": "Request must be JSON"}), 400
     
     data = request.json
-    property = Property.query.get(property_id)
     
-    if property is None:
-        return jsonify({"error": "Property not found"}), 404
+    # First check if property exists using Prepared Statement
+    with engine.connect() as connection:
+        check_query = text("SELECT COUNT(*) FROM Property WHERE property_id = :property_id")
+        exists = connection.execute(check_query, {"property_id": property_id}).scalar() > 0
+        
+        if not exists:
+            return jsonify({"error": "Property not found"}), 404
     
     update_fields = [
         'property_name', 'address', 'num_bedrooms', 'num_bathrooms', 'price_per_person'
     ]
+    update_data = {}
     update_made = False
     
     for field in update_fields:
         if field in data:
-            setattr(property, field, data[field])
+            update_data[field] = data[field]
             update_made = True
     
     if not update_made:
         return jsonify({"error": "No fields to update"}), 400
     
     try:
-        db.session.commit()
+        # Using Prepared Statement with parameter binding
+        with engine.connect() as connection:
+            # Begin a transaction
+            with connection.begin():
+                # Dynamically build the update query based on provided fields
+                set_clauses = []
+                params = {"property_id": property_id}
+                
+                for field, value in update_data.items():
+                    set_clauses.append(f"{field} = :{field}")
+                    params[field] = value
+                
+                query_str = f"UPDATE Property SET {', '.join(set_clauses)} WHERE property_id = :property_id"
+                query = text(query_str)
+                
+                # Execute with named parameters
+                connection.execute(query, params)
+                
     except Exception as e:
-        db.session.rollback()
         return jsonify({"error": str(e)}), 400
     
     return jsonify({"success": True, "message": "Property updated successfully"})
@@ -276,17 +385,32 @@ def update_property(property_id):
 
 @app.route('/properties/<int:property_id>', methods=['DELETE'])
 def delete_property(property_id):
+    # Check if property exists using ORM - combines ORM and prepared statements
     property = Property.query.get(property_id)
     
     if property is None:
         return jsonify({"error": "Property not found"}), 404
     
     try:
-        db.session.delete(property)
-        db.session.commit()
+        # Using Prepared Statement with parameter binding
+        with engine.connect() as connection:
+            # Begin a transaction
+            with connection.begin():
+                # First check if property has any applications (prevents FK constraint violation)
+                check_query = text("""
+                    SELECT COUNT(*) FROM LeaseApplications WHERE app_property_id = :property_id
+                """)
+                app_count = connection.execute(check_query, {"property_id": property_id}).scalar()
+                
+                if app_count > 0:
+                    return jsonify({"error": "Cannot delete property with related records"}), 400
+                
+                # Then delete the property
+                delete_query = text("DELETE FROM Property WHERE property_id = :property_id")
+                connection.execute(delete_query, {"property_id": property_id})
+                
     except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": "Cannot delete property with related records"}), 400
+        return jsonify({"error": str(e)}), 400
     
     return jsonify({"success": True, "message": "Property deleted successfully"})
 
@@ -294,18 +418,39 @@ def delete_property(property_id):
 # LeaseApplications CRUD
 @app.route('/applications', methods=['GET'])
 def get_applications():
-    applications = LeaseApplication.query.all()
+    # Using ORM with join for efficient relationship loading
+    applications = db.session.query(LeaseApplication).all()
     return jsonify([app.to_dict() for app in applications])
 
 
 @app.route('/applications/<int:application_id>', methods=['GET'])
 def get_application(application_id):
-    application = LeaseApplication.query.get(application_id)
-    
-    if application is None:
-        return jsonify({"error": "Application not found"}), 404
-    
-    return jsonify(application.to_dict())
+    # Using Prepared Statement with parameter binding and JOINs for related data
+    with engine.connect() as connection:
+        query = text("""
+            SELECT la.*, r.name as renter_name, p.property_name 
+            FROM LeaseApplications la
+            JOIN Renter r ON la.app_renter_id = r.renter_id
+            JOIN Property p ON la.app_property_id = p.property_id
+            WHERE la.application_id = :application_id
+        """)
+        
+        result = connection.execute(query, {"application_id": application_id}).fetchone()
+        
+        if result is None:
+            return jsonify({"error": "Application not found"}), 404
+        
+        # Convert row to dictionary with joined data
+        application = {
+            'application_id': result[0],
+            'app_renter_id': result[1],
+            'app_property_id': result[2],
+            'status': result[3],
+            'renter_name': result[4],
+            'property_name': result[5]
+        }
+        
+        return jsonify(application)
 
 
 @app.route('/applications', methods=['POST'])
@@ -320,36 +465,55 @@ def create_application():
         if field not in data:
             return jsonify({"error": f"Missing required field: {field}"}), 400
     
-    renter = Renter.query.get(data['app_renter_id'])
-    if renter is None:
-        return jsonify({"error": "Renter not found"}), 404
-    
-    property = Property.query.get(data['app_property_id'])
-    if property is None:
-        return jsonify({"error": "Property not found"}), 404
-    
-    # Check if property is within budget
-    if not is_within_budget(property.price_per_person, renter.min_budget, renter.max_budget):
-        return jsonify({"error": "Property price is outside renter's budget range"}), 400
-    
     try:
-        new_application = LeaseApplication(
-            app_renter_id=data['app_renter_id'],
-            app_property_id=data['app_property_id'],
-            status=data['status']
-        )
-        
-        db.session.add(new_application)
-        db.session.commit()
-        
-        return jsonify({
-            "success": True, 
-            "message": "Application created successfully", 
-            "application_id": new_application.application_id
-        }), 201
+        # Using Prepared Statements for validation
+        with engine.connect() as connection:
+            # Check if renter exists
+            renter_query = text("SELECT min_budget, max_budget FROM Renter WHERE renter_id = :renter_id")
+            renter_result = connection.execute(renter_query, {"renter_id": data['app_renter_id']}).fetchone()
+            
+            if renter_result is None:
+                return jsonify({"error": "Renter not found"}), 404
+            
+            min_budget, max_budget = renter_result
+            
+            # Check if property exists
+            property_query = text("SELECT price_per_person FROM Property WHERE property_id = :property_id")
+            property_result = connection.execute(property_query, {"property_id": data['app_property_id']}).fetchone()
+            
+            if property_result is None:
+                return jsonify({"error": "Property not found"}), 404
+            
+            price_per_person = property_result[0]
+            
+            # Check if property is within budget
+            if not is_within_budget(price_per_person, min_budget, max_budget):
+                return jsonify({"error": "Property price is outside renter's budget range"}), 400
+            
+            # Insert application using prepared statement
+            with connection.begin():
+                insert_query = text("""
+                    INSERT INTO LeaseApplications (app_renter_id, app_property_id, status) 
+                    VALUES (:app_renter_id, :app_property_id, :status)
+                """)
+                
+                result = connection.execute(insert_query, {
+                    "app_renter_id": data['app_renter_id'],
+                    "app_property_id": data['app_property_id'],
+                    "status": data['status']
+                })
+                
+                # Get the last inserted ID - SQLite specific
+                last_id_query = text("SELECT last_insert_rowid()")
+                application_id = connection.execute(last_id_query).scalar()
+                
+                return jsonify({
+                    "success": True, 
+                    "message": "Application created successfully", 
+                    "application_id": application_id
+                }), 201
         
     except Exception as e:
-        db.session.rollback()
         return jsonify({"error": str(e)}), 400
 
 
@@ -359,22 +523,38 @@ def update_application(application_id):
         return jsonify({"error": "Request must be JSON"}), 400
     
     data = request.json
-    application = LeaseApplication.query.get(application_id)
     
-    if application is None:
-        return jsonify({"error": "Application not found"}), 404
+    # Check if application exists using prepared statement
+    with engine.connect() as connection:
+        check_query = text("SELECT COUNT(*) FROM LeaseApplications WHERE application_id = :application_id")
+        exists = connection.execute(check_query, {"application_id": application_id}).scalar() > 0
+        
+        if not exists:
+            return jsonify({"error": "Application not found"}), 404
     
     # Special case for status-only updates
     if 'status' in data and len(data) == 1:
         try:
-            application.status = data['status']
-            db.session.commit()
-            return jsonify({"success": True, "message": "Application status updated successfully"})
+            # Using Prepared Statement with parameter binding
+            with engine.connect() as connection:
+                with connection.begin():
+                    update_query = text("""
+                        UPDATE LeaseApplications SET status = :status 
+                        WHERE application_id = :application_id
+                    """)
+                    
+                    connection.execute(update_query, {
+                        "status": data['status'],
+                        "application_id": application_id
+                    })
+                    
+                    return jsonify({"success": True, "message": "Application status updated successfully"})
         except Exception as e:
-            db.session.rollback()
             return jsonify({"error": str(e)}), 400
     
+    # For more complex updates, using ORM for clarity
     update_fields = ['app_renter_id', 'app_property_id', 'status']
+    application = LeaseApplication.query.get(application_id) 
     update_made = False
     
     for field in update_fields:
@@ -396,30 +576,56 @@ def update_application(application_id):
 
 @app.route('/applications/<int:application_id>', methods=['DELETE'])
 def delete_application(application_id):
-    application = LeaseApplication.query.get(application_id)
-    
-    if application is None:
-        return jsonify({"error": "Application not found"}), 404
-    
-    try:
-        db.session.delete(application)
-        db.session.commit()
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 400
-    
-    return jsonify({"success": True, "message": "Application deleted successfully"})
+    # Using Prepared Statement with parameter binding
+    with engine.connect() as connection:
+        # Check if application exists
+        check_query = text("SELECT COUNT(*) FROM LeaseApplications WHERE application_id = :application_id")
+        exists = connection.execute(check_query, {"application_id": application_id}).scalar() > 0
+        
+        if not exists:
+            return jsonify({"error": "Application not found"}), 404
+        
+        try:
+            # Begin a transaction and delete
+            with connection.begin():
+                delete_query = text("DELETE FROM LeaseApplications WHERE application_id = :application_id")
+                connection.execute(delete_query, {"application_id": application_id})
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
+        
+        return jsonify({"success": True, "message": "Application deleted successfully"})
 
 
-# Budget endpoint
+# Budget endpoint using prepared statement
 @app.route('/properties/budget/<float:min_price>/<float:max_price>', methods=['GET'])
 def get_properties_by_budget(min_price, max_price):
     try:
-        properties = Property.query.filter(
-            Property.price_per_person.between(min_price, max_price)
-        ).all()
-        
-        return jsonify([prop.to_dict() for prop in properties])
+        # Using Prepared Statement with parameter binding
+        with engine.connect() as connection:
+            query = text("""
+                SELECT * FROM Property 
+                WHERE price_per_person BETWEEN :min_price AND :max_price
+            """)
+            
+            result = connection.execute(query, {
+                "min_price": min_price,
+                "max_price": max_price
+            })
+            
+            properties = []
+            for row in result:
+                property = {
+                    'property_id': row[0],
+                    'property_name': row[1],
+                    'address': row[2],
+                    'num_bedrooms': row[3],
+                    'num_bathrooms': row[4],
+                    'price_per_person': row[5]
+                }
+                properties.append(property)
+            
+            return jsonify(properties)
         
     except Exception as e:
         return jsonify({"error": str(e)}), 400

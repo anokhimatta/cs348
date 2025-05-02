@@ -116,13 +116,13 @@ const RenterList = () => {
             <div className="delete-modal-actions">
               <button 
                 onClick={() => handleDeleteConfirm(deleteConfirmId)} 
-                className="button-danger"
+                className="btn btn-secondary"
               >
                 Delete
               </button>
               <button 
                 onClick={handleDeleteCancel} 
-                className="button-secondary"
+                className="btn btn-secondary"
               >
                 Cancel
               </button>
