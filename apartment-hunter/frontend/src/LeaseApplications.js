@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import './Renters.css'; // Using the same CSS file as Renters
 
 const LeaseApplications = () => {
+  const navigate = useNavigate();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
   
   // Search and filter state
   const [searchTerm, setSearchTerm] = useState('');
@@ -40,16 +38,19 @@ const LeaseApplications = () => {
     fetchApplications();
   }, []);
   
+  // Handle navigation functions
+  const handleAddNew = () => navigate('/applications/new');
+  const handleView = (id) => navigate(`/applications/${id}`);
+  const handleEdit = (id) => navigate(`/applications/${id}/edit`);
+  
   // Handle search input change
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1); // Reset to first page when searching
   };
   
   // Handle status filter change
   const handleStatusFilterChange = (e) => {
     setStatusFilter(e.target.value);
-    setCurrentPage(1); // Reset to first page when filtering
   };
   
   // Filter applications based on search term and status
@@ -64,13 +65,7 @@ const LeaseApplications = () => {
     return matchesSearch && matchesStatus;
   });
   
-  // Calculate pagination
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredApplications.slice(indexOfFirstItem, indexOfLastItem);
-  
-  // Change page
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const currentItems = filteredApplications;
   
   // Get unique status values for filter dropdown
   const statusOptions = [...new Set(applications.map(app => app.status))];
@@ -112,7 +107,7 @@ const LeaseApplications = () => {
       <div className="page-header">
         <h1>Lease Applications</h1>
         <div className="header-actions">
-          <Link to="/applications/new" className="btn btn-primary">Add New Application</Link>
+          <button onClick={handleAddNew} className="btn btn-primary">Add New Application</button>
         </div>
       </div>
       
@@ -170,20 +165,21 @@ const LeaseApplications = () => {
                     </span>
                   </td>
                   <td className="action-icons">
-                    <Link 
-                      to={`/applications/${application.application_id}`} 
-                      className="icon-button view" 
+                    <button 
+                      onClick={() => handleView(application.application_id)} 
+                      className="btn btn-info btn-sm" 
                       title="View Details"
                     >
-                      <i className="fas fa-eye"></i> View
-                    </Link>
-                    <Link 
-                      to={`/applications/${application.application_id}/edit`} 
-                      className="icon-button edit" 
+                      View
+                    </button>
+                    {' '}
+                    <button 
+                      onClick={() => handleEdit(application.application_id)} 
+                      className="btn btn-info btn-sm" 
                       title="Edit"
                     >
-                      <i className="fas fa-edit"></i> Edit
-                    </Link>
+                      Edit
+                    </button>
                   </td>
                 </tr>
               ))
@@ -198,7 +194,7 @@ const LeaseApplications = () => {
         </table>
       </div>
       
-      {/* Pagination */}
+      {/* Pagination 
       {filteredApplications.length > itemsPerPage && (
         <div className="pagination">
           <button
@@ -227,7 +223,7 @@ const LeaseApplications = () => {
             Next
           </button>
         </div>
-      )}
+      )}*/}
     </div>
   );
 };

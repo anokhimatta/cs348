@@ -185,12 +185,6 @@ const LeaseApplicationDetail = () => {
             </span>
           </div>
         </div>
-        <div className="detail-row">
-          <div className="detail-label">Application Date:</div>
-          <div className="detail-value">
-            {application.application_date ? new Date(application.application_date).toLocaleDateString() : 'N/A'}
-          </div>
-        </div>
       </div>
       
       <div className="actions-container">

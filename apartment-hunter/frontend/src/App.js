@@ -20,6 +20,8 @@ function App() {
             <ul>
               <li><Link to="/renters">Renters</Link></li>
               <li><Link to="/properties">Properties</Link></li>
+              <li><Link to="/applications">Lease Applications</Link></li>
+
               {/* Add other nav links for Offices, etc. */}
             </ul>
           </nav>

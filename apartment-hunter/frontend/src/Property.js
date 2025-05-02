@@ -188,27 +188,24 @@ const PropertyList = () => {
                       <td>{property.num_bedrooms}</td>
                       <td>{property.num_bathrooms}</td>
                       <td>${property.price_per_person}</td>
-                      <td className="action-icons">
+                      <td className="action-buttons">
                         <button 
-                          className="icon-button view" 
+                          className="btn btn-info btn-sm" 
                           onClick={() => handleViewDetails(property)}
-                          title="View Details"
                         >
-                          <i className="fas fa-eye"></i>
+                          View
                         </button>
                         <button 
-                          className="icon-button edit" 
+                          className="btn btn-warning btn-sm" 
                           onClick={() => handleEdit(property)}
-                          title="Edit Property"
                         >
-                          <i className="fas fa-edit"></i>
+                          Edit
                         </button>
                         <button 
-                          className="icon-button delete" 
+                          className="btn btn-info btn-sm" 
                           onClick={() => handleDelete(property.property_id)}
-                          title="Delete Property"
                         >
-                          <i className="fas fa-trash"></i>
+                          Delete
                         </button>
                       </td>
                     </tr>
@@ -286,36 +283,7 @@ const PropertyList = () => {
                 <div className="detail-label">Price Per Person:</div>
                 <div className="detail-value">${selectedProperty.price_per_person}</div>
               </div>
-              {selectedProperty.remodel_status && (
-                <div className="detail-row">
-                  <div className="detail-label">Remodel Status:</div>
-                  <div className="detail-value">{selectedProperty.remodel_status}</div>
-                </div>
-              )}
-              {selectedProperty.furnish_status && (
-                <div className="detail-row">
-                  <div className="detail-label">Furnish Status:</div>
-                  <div className="detail-value">{selectedProperty.furnish_status}</div>
-                </div>
-              )}
-              {selectedProperty.laundry_location && (
-                <div className="detail-row">
-                  <div className="detail-label">Laundry:</div>
-                  <div className="detail-value">{selectedProperty.laundry_location}</div>
-                </div>
-              )}
-              {selectedProperty.lease_duration && (
-                <div className="detail-row">
-                  <div className="detail-label">Lease Duration:</div>
-                  <div className="detail-value">{selectedProperty.lease_duration} months</div>
-                </div>
-              )}
-              {selectedProperty.distance_to_walc && (
-                <div className="detail-row">
-                  <div className="detail-label">Distance to WALC:</div>
-                  <div className="detail-value">{selectedProperty.distance_to_walc} miles</div>
-                </div>
-              )}
+              {/* Removed Remodel Status, Furnish Status, Laundry Location, Lease Duration, and Distance to WALC */}
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setSelectedProperty(null)}>Close</button>
@@ -372,12 +340,7 @@ const PropertyForm = ({ property, onClose, onSuccess }) => {
     address: '',
     num_bedrooms: '',
     num_bathrooms: '',
-    price_per_person: '',
-    remodel_status: 'Not Remodeled',
-    furnish_status: 'Unfurnished',
-    laundry_location: 'In Unit',
-    lease_duration: '12',
-    distance_to_walc: ''
+    price_per_person: ''
   };
   
   const [formData, setFormData] = useState(property || initialState);
@@ -544,72 +507,7 @@ const PropertyForm = ({ property, onClose, onSuccess }) => {
             {errors.price_per_person && <div className="error-text">{errors.price_per_person}</div>}
           </div>
           
-          <div className="form-group">
-            <label htmlFor="remodel_status">Remodel Status</label>
-            <select
-              id="remodel_status"
-              name="remodel_status"
-              value={formData.remodel_status}
-              onChange={handleChange}
-            >
-              <option value="Not Remodeled">Not Remodeled</option>
-              <option value="Partially Remodeled">Partially Remodeled</option>
-              <option value="Fully Remodeled">Fully Remodeled</option>
-            </select>
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="furnish_status">Furnish Status</label>
-            <select
-              id="furnish_status"
-              name="furnish_status"
-              value={formData.furnish_status}
-              onChange={handleChange}
-            >
-              <option value="Unfurnished">Unfurnished</option>
-              <option value="Partially Furnished">Partially Furnished</option>
-              <option value="Fully Furnished">Fully Furnished</option>
-            </select>
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="laundry_location">Laundry Location</label>
-            <select
-              id="laundry_location"
-              name="laundry_location"
-              value={formData.laundry_location}
-              onChange={handleChange}
-            >
-              <option value="In Unit">In Unit</option>
-              <option value="In Building">In Building</option>
-              <option value="None">None</option>
-            </select>
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="lease_duration">Lease Duration (months)</label>
-            <input
-              type="number"
-              id="lease_duration"
-              name="lease_duration"
-              value={formData.lease_duration}
-              onChange={handleChange}
-              min="1"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="distance_to_walc">Distance to WALC (miles)</label>
-            <input
-              type="number"
-              id="distance_to_walc"
-              name="distance_to_walc"
-              value={formData.distance_to_walc}
-              onChange={handleChange}
-              min="0"
-              step="0.1"
-            />
-          </div>
+          {/* Removed Remodel Status, Furnish Status, Laundry Location, Lease Duration, and Distance to WALC fields */}
           
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
