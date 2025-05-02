@@ -41,7 +41,7 @@ const LeaseApplications = () => {
   // Handle navigation functions
   const handleAddNew = () => navigate('/applications/new');
   const handleView = (id) => navigate(`/applications/${id}`);
-  const handleEdit = (id) => navigate(`/applications/${id}/edit`);
+  //const handleEdit = (id) => navigate(`/applications/${id}/edit`);
   
   // Handle search input change
   const handleSearchChange = (e) => {
@@ -77,8 +77,8 @@ const LeaseApplications = () => {
         return 'status-badge status-open';
       case 'pending':
         return 'status-badge status-inprogress';
-      case 'rejected':
-        return 'status-badge status-rejected';
+      case 'denied':
+        return 'status-badge status-denied';
       case 'withdrawn':
         return 'status-badge status-closed';
       default:
@@ -173,13 +173,6 @@ const LeaseApplications = () => {
                       View
                     </button>
                     {' '}
-                    <button 
-                      onClick={() => handleEdit(application.application_id)} 
-                      className="btn btn-info btn-sm" 
-                      title="Edit"
-                    >
-                      Edit
-                    </button>
                   </td>
                 </tr>
               ))

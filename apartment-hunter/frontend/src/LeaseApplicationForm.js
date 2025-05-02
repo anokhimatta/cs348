@@ -211,10 +211,10 @@ const LeaseApplicationForm = () => {
               className={formErrors.status ? 'error' : ''}
               disabled={submitting}
             >
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-              <option value="Withdrawn">Withdrawn</option>
+              <option value="PENDING">PENDING</option>
+              <option value="APPROVED">APPROVED</option>
+              <option value="DENIED">DENIED</option>
+              <option value="WITHDRAWN">WITHDRAWN</option>
             </select>
             {formErrors.status && (
               <div className="error-text">{formErrors.status}</div>

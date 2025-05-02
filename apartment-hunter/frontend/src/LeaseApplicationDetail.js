@@ -94,8 +94,8 @@ const LeaseApplicationDetail = () => {
         return 'status-badge status-open';
       case 'pending':
         return 'status-badge status-inprogress';
-      case 'rejected':
-        return 'status-badge status-rejected';
+      case 'denied':
+        return 'status-badge status-denied';
       case 'withdrawn':
         return 'status-badge status-closed';
       default:
@@ -246,10 +246,10 @@ const LeaseApplicationDetail = () => {
                 onChange={(e) => setNewStatus(e.target.value)}
                 className="search-input"
               >
-                <option value="Pending">Pending</option>
-                <option value="Approved">Approved</option>
-                <option value="Rejected">Rejected</option>
-                <option value="Withdrawn">Withdrawn</option>
+                <option value="PENDING">PENDING</option>
+                <option value="APPROVED">APPROVED</option>
+                <option value="DENIED">DENIED</option>
+                <option value="WITHDRAWN">WITHDRAWN</option>
               </select>
             </div>
             <div className="modal-footer">
