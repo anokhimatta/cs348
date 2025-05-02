@@ -466,11 +466,11 @@ def create_application():
             return jsonify({"error": f"Missing required field: {field}"}), 400
     
     try:
-        # Using Prepared Statements for validation
-        with engine.connect() as connection:
+        # Create a new connection for validation queries
+        with engine.connect() as validation_conn:
             # Check if renter exists
             renter_query = text("SELECT min_budget, max_budget FROM Renter WHERE renter_id = :renter_id")
-            renter_result = connection.execute(renter_query, {"renter_id": data['app_renter_id']}).fetchone()
+            renter_result = validation_conn.execute(renter_query, {"renter_id": data['app_renter_id']}).fetchone()
             
             if renter_result is None:
                 return jsonify({"error": "Renter not found"}), 404
@@ -479,7 +479,7 @@ def create_application():
             
             # Check if property exists
             property_query = text("SELECT price_per_person FROM Property WHERE property_id = :property_id")
-            property_result = connection.execute(property_query, {"property_id": data['app_property_id']}).fetchone()
+            property_result = validation_conn.execute(property_query, {"property_id": data['app_property_id']}).fetchone()
             
             if property_result is None:
                 return jsonify({"error": "Property not found"}), 404
@@ -489,15 +489,17 @@ def create_application():
             # Check if property is within budget
             if not is_within_budget(price_per_person, min_budget, max_budget):
                 return jsonify({"error": "Property price is outside renter's budget range"}), 400
-            
+        
+        # Create a separate connection for the transaction
+        with engine.connect() as transaction_conn:
             # Insert application using prepared statement
-            with connection.begin():
+            with transaction_conn.begin():
                 insert_query = text("""
                     INSERT INTO LeaseApplications (app_renter_id, app_property_id, status) 
                     VALUES (:app_renter_id, :app_property_id, :status)
                 """)
                 
-                result = connection.execute(insert_query, {
+                transaction_conn.execute(insert_query, {
                     "app_renter_id": data['app_renter_id'],
                     "app_property_id": data['app_property_id'],
                     "status": data['status']
@@ -505,13 +507,13 @@ def create_application():
                 
                 # Get the last inserted ID - SQLite specific
                 last_id_query = text("SELECT last_insert_rowid()")
-                application_id = connection.execute(last_id_query).scalar()
+                application_id = transaction_conn.execute(last_id_query).scalar()
                 
-                return jsonify({
-                    "success": True, 
-                    "message": "Application created successfully", 
-                    "application_id": application_id
-                }), 201
+        return jsonify({
+            "success": True, 
+            "message": "Application created successfully", 
+            "application_id": application_id
+        }), 201
         
     except Exception as e:
         return jsonify({"error": str(e)}), 400
