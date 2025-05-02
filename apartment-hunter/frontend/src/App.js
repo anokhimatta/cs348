@@ -5,6 +5,9 @@ import RenterForm from './RenterForm.js';
 import RenterDetail from './RenterDetail.js';
 import EditRenterForm from './EditRenterForm.js';
 import Property from './Property.js';
+import LeaseApplications from './LeaseApplications';
+import LeaseApplicationDetail from './LeaseApplicationDetail';
+import LeaseApplicationForm from './LeaseApplicationForm';
 import './App.css';
 
 function App() {
@@ -36,6 +39,10 @@ function App() {
             {/* <Route path="/properties/new" element={<PropertyForm />} /> */}
             {/* <Route path="/properties/:id" element={<PropertyDetail />} /> */}
             {/* <Route path="/properties/:id/edit" element={<EditPropertyForm />} /> */}
+            <Route path="/applications" element={<LeaseApplications />} />
+            <Route path="/applications/:id" element={<LeaseApplicationDetail />} />
+            <Route path="/applications/new" element={<LeaseApplicationForm />} />
+            <Route path="/applications/:id/edit" element={<LeaseApplicationForm />} />
           </Routes>
         </main>
         
