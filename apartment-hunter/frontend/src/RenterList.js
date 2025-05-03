@@ -135,26 +135,3 @@ const RenterList = () => {
 };
 
 export default RenterList;
-
-
-
-/*<button className="btn-container"
-                      onClick={() => navigate(`/renters/${renter.renter_id}`)} 
-                      className="button-view"
-                      >
-                      View
-                    </button>
-
-                    <button className="btn-container"
-                      onClick={() => navigate(`/renters/${renter.renter_id}/edit`)} 
-                      className="button-view"
-                    >
-                      Edit
-                    </button>
-
-                    <button className="btn-container" 
-                      onClick={() => handleDeleteClick(renter.renter_id)} 
-                      /*className="button-delete"
-                    >
-                      Delete
-                    </button>*/
